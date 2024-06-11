@@ -1,5 +1,4 @@
 # TЗ2
-# TZ2.
 ## Техническое задание №2 (ТЗ2)
 
 [![Java CI](https://github.com/sankficeba/tp/actions/workflows/ci_maven.yml/badge.svg)](https://github.com/sankficeba/tp/actions/workflows/ci_maven.yml)

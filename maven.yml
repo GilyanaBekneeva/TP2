@@ -1,0 +1,52 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+
+    - name: Run tests and capture output
+      id: run-tests
+      run: |
+        mvn test 2>&1 | tee mvn-output.log
+        TEST_RESULTS=$(cat mvn-output.log)
+        echo "::set-output name=test_results::$TEST_RESULTS"
+
+    - name: List workspace files for debugging
+      run: |
+        echo "Files in workspace after tests:"
+        ls -alh
+
+    - name: Notify Slack on success
+      if: success()
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{"text":"Все ок!"}' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on failure
+      if: failure()
+      run: |
+        if [ -f mvn-output.log ]; then
+          FAILED_TESTS=$(grep -A 10 "Tests run:" mvn-output.log)
+          curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"Тесты не пройдены:\\n${FAILED_TESTS}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+        else
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Тесты не пройдены: файл с результатами тестов не найден."}' ${{ secrets.SLACK_WEBHOOK_URL }}
+        fi
